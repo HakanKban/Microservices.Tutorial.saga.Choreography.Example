@@ -1,5 +1,7 @@
 ﻿using MassTransit;
+using MassTransit.RabbitMqTransport.Topology;
 using MongoDB.Driver;
+using Shared;
 using Shared.Events;
 using Stock.API.Services;
 
@@ -8,10 +10,14 @@ namespace Stock.API.Consumer
     public class OrderCreatedEventConsumer : IConsumer<OrderCreatedEvent>
     {
         readonly MongoDbService _mongoDbService;
+        readonly ISendEndpointProvider _sendEndpointProvider;
+        readonly IPublishEndpoint _publishEndpoint;
 
-        public OrderCreatedEventConsumer(MongoDbService mongoDbService)
+        public OrderCreatedEventConsumer(MongoDbService mongoDbService, ISendEndpointProvider sendEndpointProvider, IPublishEndpoint publishEndpoint)
         {
             _mongoDbService = mongoDbService;
+            _sendEndpointProvider = sendEndpointProvider;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task Consume(ConsumeContext<OrderCreatedEvent> context)
@@ -36,19 +42,29 @@ namespace Stock.API.Consumer
                     await collection.FindOneAndReplaceAsync(x => x.ProductId == item.ProductId, stock);
 
                 }
+                 var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{RabbitMQSettings.Payment_StockReservedEventQueue}"));
                 //Paymenti uyaracak event
-            
-            
-            
+                StockReserveEvent stockReserveEvent = new()
+                {
+                    OrderId = context.Message.OrderId,
+                    BuyerId = context.Message.BuyerId,
+                    TotalPrice = context.Message.TotalPrice,
+                    OrderItems = context.Message.OrderItems
+                };
+                await sendEndpoint.Send(stockReserveEvent);
             }
             else 
             {
+                StockNotReserveEvent stockNotReserveEvent = new()
+                {
+                    OrderId = context.Message.OrderId,
+                    BuyerId = context.Message.BuyerId,
+                    Message = "Stok Miktarı yetersiz"
+                };
+                await _publishEndpoint.Publish(stockNotReserveEvent);
                 //Stok işlemi başarısız
                 //Order için event
-                
             }   
-
-
         }
     }
 }
