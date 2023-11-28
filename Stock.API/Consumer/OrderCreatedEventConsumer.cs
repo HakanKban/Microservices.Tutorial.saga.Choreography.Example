@@ -27,7 +27,7 @@ namespace Stock.API.Consumer
 
             foreach (var orderItem in context.Message.OrderItems)
             {
-                stockResult.Add(await (await collection.FindAsync(s => s.ProductId == orderItem.ProductId &&
+                stockResult.Add(await (await collection.FindAsync(s => s.ProductId == orderItem.ProductId.ToString() &&
                 s.Count > orderItem.Count)).AnyAsync());
             }
 
@@ -36,10 +36,10 @@ namespace Stock.API.Consumer
                 //Stock güncellemesi
                 foreach (var item in context.Message.OrderItems)
                 {
-                  var stock = await (await collection.FindAsync(s => s.ProductId == item.ProductId)).FirstOrDefaultAsync();
+                  var stock = await (await collection.FindAsync(s => s.ProductId == item.ProductId.ToString())).FirstOrDefaultAsync();
                     stock.Count -= item.Count;
 
-                    await collection.FindOneAndReplaceAsync(x => x.ProductId == item.ProductId, stock);
+                    await collection.FindOneAndReplaceAsync(x => x.ProductId == item.ProductId.ToString(), stock);
 
                 }
                  var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{RabbitMQSettings.Payment_StockReservedEventQueue}"));

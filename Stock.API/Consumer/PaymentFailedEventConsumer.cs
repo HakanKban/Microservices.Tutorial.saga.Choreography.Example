@@ -21,9 +21,9 @@ namespace Stock.API.Consumer
             foreach (var item in context.Message.OrderItemMessages)
             {
 
-                var stock = await (await stocks.FindAsync(x => x.ProductId == item.ProductId)).FirstOrDefaultAsync();
+                var stock = await (await stocks.FindAsync(x => x.ProductId == item.ProductId.ToString())).FirstOrDefaultAsync();
                 stock.Count += item.Count;
-                await stocks.FindOneAndReplaceAsync(s => s.ProductId == item.ProductId, stock);
+                await stocks.FindOneAndReplaceAsync(s => s.ProductId == item.ProductId.ToString(), stock);
             }
 
 
