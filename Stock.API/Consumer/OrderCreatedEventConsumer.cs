@@ -28,7 +28,7 @@ namespace Stock.API.Consumer
             foreach (var orderItem in context.Message.OrderItems)
             {
                 stockResult.Add(await (await collection.FindAsync(s => s.ProductId == orderItem.ProductId.ToString() &&
-                s.Count > orderItem.Count)).AnyAsync());
+                s.Count > (long)orderItem.Count)).AnyAsync());
             }
 
             if (stockResult.TrueForAll(s => s.Equals(true))) 
